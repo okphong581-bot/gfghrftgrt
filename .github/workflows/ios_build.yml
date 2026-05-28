@@ -1,0 +1,71 @@
+name: Build Xocket iOS IPA
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          
+      - name: Create project files if missing
+        run: flutter create .
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Setup Info.plist Permissions
+        run: |
+          cd ios/Runner
+          plutil -replace CFBundleDisplayName -string "Xocket" Info.plist
+          plutil -replace CFBundleName -string "Xocket" Info.plist
+          plutil -replace NSCameraUsageDescription -string "Xocket cần quyền camera để chụp ảnh gửi bạn bè" Info.plist
+          plutil -replace NSPhotoLibraryUsageDescription -string "Xocket cần quyền thư viện ảnh" Info.plist
+          plutil -replace NSMicrophoneUsageDescription -string "Xocket cần quyền micro" Info.plist
+
+      - name: Build iOS IPA (No Codesign)
+        run: |
+          cd ios
+          # Chạy lệnh build flutter trước để build code Dart (nếu lỗi signing thì bỏ qua)
+          flutter build ios --release --no-codesign || true
+          
+          # Ép Xcode build bỏ qua tất cả chứng chỉ
+          xcodebuild build \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            SYMROOT=$PWD/../build/ios \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            EXPANDED_CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_SPECIFIER=""
+          
+      - name: Create Payload and Zip
+        run: |
+          mkdir Payload
+          if [ -d "build/ios/Release-iphoneos/Runner.app" ]; then
+            cp -r build/ios/Release-iphoneos/Runner.app Payload/
+          else
+            cp -r build/ios/iphoneos/Runner.app Payload/
+          fi
+          zip -r app.ipa Payload
+          mkdir -p build/ios/iphoneos
+          mv app.ipa build/ios/iphoneos/
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xocket-app-ipa
+          path: build/ios/iphoneos/app.ipa
