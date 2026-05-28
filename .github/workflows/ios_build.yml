@@ -64,7 +64,7 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             EXPANDED_CODE_SIGN_IDENTITY="" \
-            PROVISIONING_PROFILE_SPECIFIER=""
+            PROVISIONING_PROFILE_SPECIFIER="" > xcodebuild_log.txt 2>&1 || (echo "XCODE BUILD FAILED. LAST 200 LINES:" && tail -n 200 xcodebuild_log.txt && exit 1)
           
       - name: Create Payload and Zip
         run: |
