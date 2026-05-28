@@ -35,6 +35,20 @@ jobs:
       - name: Build iOS IPA (No Codesign)
         run: |
           cd ios
+          
+          # Fix iOS Deployment Target to 13.0 for plugins
+          sed -i '' "s/^# platform :ios, .*/platform :ios, '13.0'/g" Podfile || true
+          
+          # Patch Podfile to disable code signing for all Pods
+          sed -i '' "s/flutter_additional_ios_build_settings(target)/flutter_additional_ios_build_settings(target)\n      target.build_configurations.each do |config|\n        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'\n        config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'\n        config.build_settings['CODE_SIGN_IDENTITY'] = ''\n        config.build_settings['EXPANDED_CODE_SIGN_IDENTITY'] = ''\n      end/g" Podfile || true
+          
+          # Patch Runner.xcodeproj to disable code signing
+          sed -i '' 's/CODE_SIGNING_REQUIRED = YES/CODE_SIGNING_REQUIRED = NO/g' Runner.xcodeproj/project.pbxproj || true
+          sed -i '' 's/CODE_SIGNING_ALLOWED = YES/CODE_SIGNING_ALLOWED = NO/g' Runner.xcodeproj/project.pbxproj || true
+          
+          # Cài đặt Pods
+          pod install || true
+          
           # Chạy lệnh build flutter trước để build code Dart (nếu lỗi signing thì bỏ qua)
           flutter build ios --release --no-codesign || true
           
