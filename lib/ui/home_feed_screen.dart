@@ -191,6 +191,7 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> with SingleTickerProvid
                               ),
                             ),
                           ),
+                          ),
                         ],
                       ),
                     );
