@@ -171,9 +171,10 @@ class _HomeFeedScreenState extends State<HomeFeedScreen> with SingleTickerProvid
                             ],
                           ),
                           const SizedBox(height: 12),
-                          Container(
-                            width: double.infinity,
+                          AspectRatio(
                             aspectRatio: 1, // Hình vuông Locket chuẩn
+                            child: Container(
+                              width: double.infinity,
                             decoration: BoxDecoration(
                               color: XocketTheme.surface,
                               borderRadius: BorderRadius.circular(48), // Góc siêu to khổng lồ
