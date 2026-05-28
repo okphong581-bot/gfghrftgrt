@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'models.dart';
 
 class XocketNetwork {
@@ -92,6 +93,7 @@ class UpAnhLayLinkUploader {
   static Future<String?> uploadImage(List<int> bytes, String filename) async {
     try {
       final request = http.MultipartRequest("POST", Uri.parse(uploadUrl));
+      request.headers['User-Agent'] = 'Mozilla/5.0';
       request.fields['reqtype'] = 'fileupload';
       request.fields['userhash'] = ''; // Trống để tải lên nặc danh miễn phí
       
@@ -99,6 +101,7 @@ class UpAnhLayLinkUploader {
         'fileToUpload',
         bytes,
         filename: filename,
+        contentType: MediaType('image', 'jpeg'),
       );
       request.files.add(multipartFile);
 
@@ -107,6 +110,8 @@ class UpAnhLayLinkUploader {
 
       if (response.statusCode == 200 && responseBody.startsWith('http')) {
         return responseBody.trim();
+      } else {
+        print("Upload Error: \${response.statusCode} - \$responseBody");
       }
     } catch (e) {
       print("Upload failed: \$e");
