@@ -87,33 +87,16 @@ class XocketNetwork {
 }
 
 class UpAnhLayLinkUploader {
-  static const String baseUrl = "https://upanhlaylink.com";
-  static const String uploadUrl = "https://upanhlaylink.com/upload";
+  static const String uploadUrl = "https://catbox.moe/user/api.php";
 
   static Future<String?> uploadImage(List<int> bytes, String filename) async {
     try {
-      final sessionResponse = await http.get(Uri.parse(baseUrl));
-      final html = sessionResponse.body;
-      
-      final tokenMatch = RegExp(r'name="csrf-token" content="([^"]+)"').firstMatch(html);
-      if (tokenMatch == null) return null;
-      final csrfToken = tokenMatch.group(1)!;
-
-      final cookies = sessionResponse.headers['set-cookie']?.split(',').map((e) => e.split(';')[0]).join('; ') ?? "";
-
       final request = http.MultipartRequest("POST", Uri.parse(uploadUrl));
-      request.headers.addAll({
-        "X-CSRF-Token": csrfToken,
-        "Cookie": cookies,
-        "User-Agent": "Mozilla/5.0",
-        "Referer": baseUrl,
-        "Origin": baseUrl,
-      });
-
-      request.fields['server'] = "server_1";
+      request.fields['reqtype'] = 'fileupload';
+      request.fields['userhash'] = ''; // Trống để tải lên nặc danh miễn phí
       
       final multipartFile = http.MultipartFile.fromBytes(
-        'images[]',
+        'fileToUpload',
         bytes,
         filename: filename,
       );
@@ -122,16 +105,11 @@ class UpAnhLayLinkUploader {
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
 
-      if (response.statusCode == 200) {
-        final data = json.decode(responseBody);
-        if (data['results'] != null && data['results'].isNotEmpty && data['results'][0]['success'] == true) {
-          return data['results'][0]['url'];
-        } else if (data['success'] == true && data['data'] != null) {
-          return data['data']['directLink'];
-        }
+      if (response.statusCode == 200 && responseBody.startsWith('http')) {
+        return responseBody.trim();
       }
     } catch (e) {
-      print("Upload failed: $e");
+      print("Upload failed: \$e");
     }
     return null;
   }
